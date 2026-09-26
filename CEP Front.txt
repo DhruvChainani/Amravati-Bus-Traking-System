@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>🚍 Amravati Bus Tracker</title>
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    body {
+      background: #eef3f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 12px;
+    }
+    .app-card {
+      max-width: 430px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 36px 36px 28px 28px;
+      box-shadow: 0 20px 50px rgba(0, 20, 40, 0.20), 0 8px 20px rgba(0,0,0,0.06);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.3);
+      position: relative;
+    }
+    /* Header */
+    .app-header {
+      background: linear-gradient(135deg, #0b2b4a 0%, #1b4b6e 100%);
+      padding: 16px 20px 12px 22px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .app-header h1 {
+      font-weight: 600;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .app-header h1 i {
+      color: #f9d77e;
+      font-size: 1.3rem;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .live-indicator {
+      background: #d32f2f;
+      padding: 3px 10px 3px 8px;
+      border-radius: 40px;
+      font-size: 0.55rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 2px 8px rgba(211, 47, 47, 0.3);
+    }
+    .live-indicator i {
+      font-size: 0.4rem;
+      animation: pulse-dot 1.2s infinite;
+    }
+    @keyframes pulse-dot {
+      0% { opacity: 0.2; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 0.2; transform: scale(0.8); }
+    }
+    /* Page navigation */
+    .page-nav {
+      display: flex;
+      background: #f8faff;
+      border-bottom: 1px solid #e3eaf2;
+      padding: 0 12px;
+    }
+    .page-nav button {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 12px 0 10px 0;
+      font-weight: 600;
+      font-size: 0.75rem;
+      color: #5a7a93;
+      border-bottom: 3px solid transparent;
+      transition: all 0.15s;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .page-nav button.active-page {
+      color: #0b2b4a;
+      border-bottom-color: #0b2b4a;
+    }
+    .page-nav button i {
+      font-size: 0.8rem;
+    }
+    .page-nav button:active {
+      transform: scale(0.95);
+    }
+    /* Pages */
+    .page {
+      display: none;
+      padding: 12px;
+      background: #f8faff;
+    }
+    .page.active-page {
+      display: block;
+    }
+    /* Home page */
+    .home-greeting {
+      background: white;
+      border-radius: 24px;
+      padding: 20px 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+      border: 1px solid #e3eaf2;
+    }
+    .home-greeting h2 {
+      font-size: 1.2rem;
+      color: #0b2b4a;
+      margin-bottom: 4px;
+    }
+    .home-greeting p {
+      color: #4d6f88;
+      font-size: 0.8rem;
+    }
+    .quick-routes {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .quick-route-btn {
+      background: white;
+      border: 1px solid #d5dfea;
+      border-radius: 16px;
+      padding: 12px 4px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 0.7rem;
+      color: #1d4763;
+      cursor: pointer;
+      transition: all 0.1s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+    }
+    .quick-route-btn i {
+      display: block;
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+      color: #1e7b4c;
+    }
+    .quick-route-btn:active {
+      transform: scale(0.95);
+      background: #eef3f9;
+    }
+    .home-features {
+      display: flex;
+      gap: 10px;
+    }
+    .home-features .feature-box {
+      flex: 1;
+      background: white;
+      border-radius: 20px;
+      padding: 14px 10px;
+      border: 1px solid #e3eaf2;
+      text-align: center;
+    }
+    .home-features .feature-box i {
+      font-size: 1.5rem;
+      color: #1b4b6e;
+      margin-bottom: 4px;
+    }
+    .home-features .feature-box span {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #1d4763;
+    }
+    /* Journey planner */
+    .planner-box {
+      background: white;
+      border-radius: 24px;
+      padding: 18px;
+      border: 1px solid #e3eaf2;
+      margin-bottom: 12px;
+    }
+    .planner-box label {
+      font-weight: 600;
+      font-size: 0.7rem;
+      color: #1d4763;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .planner-box select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid #d5dfea;
+      background: white;
+      font-size: 0.8rem;
+      color: #0b2b4a;
+      margin-bottom: 12px;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234d6f88' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+    .planner-box select:focus {
+      outline: none;
+      border-color: #1b4b6e;
+    }
+    .planner-btn {
+      width: 100%;
+      background: #0b2b4a;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .planner-btn:active {
+      transform: scale(0.97);
+      background: #1b4b6e;
+    }
+    .planner-result {
+      background: white;
+      border-radius: 20px;
+      padding: 14px 16px;
+      border: 1px solid #e3eaf2;
+      margin-top: 10px;
+      display: none;
+    }
+    .planner-result.show {
+      display: block;
+    }
+    .planner-result .result-route {
+      font-weight: 700;
+      color: #0b2b4a;
+      font-size: 0.9rem;
+    }
+    .planner-result .result-stops {
+      font-size: 0.75rem;
+      color: #4d6f88;
+      margin-top: 4px;
+    }
+    .planner-result .result-eta {
+      font-size: 0.7rem;
+      color: #1e7b4c;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+    /* Map page (existing) */
+    .map-page-wrapper {
+      padding: 0;
+    }
+    .map-side-wrapper {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      background: #eef3f9;
+      padding: 0 0 6px 0;
+    }
+    #map {
+      flex: 1;
+      height: 280px;
+      border-radius: 20px;
+      background: #d3dee9;
+      border: 1px solid #d1dce8;
+      min-width: 0;
+    }
+    .side-menu {
+      flex: 0 0 120px;
+      background: white;
+      border-radius: 20px;
+      padding: 8px 6px 6px 8px;
+      border: 1px solid #d1dce8;
+      max-height: 280px;
+      overflow-y: auto;
+      font-size: 0.6rem;
+    }
+    .side-menu::-webkit-scrollbar { width: 3px; }
+    .side-menu::-webkit-scrollbar-track { background: #e9eff5; border-radius: 20px; }
+    .side-menu::-webkit-scrollbar-thumb { background: #b6ccdd; border-radius: 20px; }
+    .side-menu .menu-title {
+      font-weight: 700;
+      color: #0b2b4a;
+      font-size: 0.65rem;
+      border-bottom: 1px solid #e9eff5;
+      padding-bottom: 5px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .stop-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 2px 3px 0;
+      border-bottom: 1px dashed #edf2f7;
+      color: #1d3f57;
+      font-weight: 500;
+    }
+    .stop-item .stop-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 55px;
+      font-size: 0.6rem;
+    }
+    .stop-item .eta {
+      background: #e8eff6;
+      padding: 0 6px;
+      border-radius: 30px;
+      font-size: 0.5rem;
+      font-weight: 600;
+      color: #13415b;
+      white-space: nowrap;
+    }
+    .stop-item.current {
+      background: #e3f0fa;
+      border-radius: 20px;
+      padding-left: 4px;
+      margin: 1px -2px;
+      border-bottom: none;
+    }
+    .stop-item.current .stop-name { font-weight: 700; color: #0b2b4a; }
+    .stop-item.current .eta { background: #0b2b4a; color: white; }
+    .empty-menu {
+      color: #6f8aa3;
+      font-size: 0.6rem;
+      text-align: center;
+      padding: 16px 0;
+    }
+    /* bottom bar */
+    .route-info {
+      padding: 8px 16px 4px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      border-top: 1px solid #eef3f8;
+    }
+    .route-info .selected-label {
+      font-weight: 600;
+      color: #0b2b4a;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .route-info .clear-btn {
+      background: #ecf3fa;
+      border: none;
+      padding: 4px 12px;
+      border-radius: 40px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #1d4a6b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid transparent;
+    }
+    .route-info .clear-btn:active {
+      background: #d5e1ed;
+      transform: scale(0.95);
+    }
+    .footer-time {
+      padding: 4px 16px 12px 16px;
+      background: white;
+      border-top: 1px solid #eef3f8;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.6rem;
+      color: #466785;
+      border-radius: 0 0 28px 28px;
+    }
+    .footer-time i { margin-right: 4px; color: #6c8daa; }
+    .route-chip {
+      background: white;
+      border: 1px solid #d5dfea;
+      padding: 4px 12px;
+      border-radius: 40px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #1d4763;
+      white-space: nowrap;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.02);
+    }
+    .route-chip.active-chip {
+      background: #0b2b4a;
+      border-color: #0b2b4a;
+      color: white;
+      box-shadow: 0 4px 10px rgba(11, 43, 74, 0.25);
+    }
+    .route-chip.active-chip i { color: #f9d77e; }
+    .route-chip:active { transform: scale(0.95); }
+    .scroll-routes {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 4px 0 8px 0;
+      scrollbar-width: thin;
+      -webkit-overflow-scrolling: touch;
+    }
+    .scroll-routes::-webkit-scrollbar { height: 3px; }
+    .scroll-routes::-webkit-scrollbar-track { background: #e9eff5; border-radius: 20px; }
+    .scroll-routes::-webkit-scrollbar-thumb { background: #b6ccdd; border-radius: 20px; }
+    @media (max-width: 460px) {
+      .side-menu { flex: 0 0 100px; font-size: 0.55rem; }
+      .side-menu .stop-item .stop-name { max-width: 45px; }
+      #map { height: 230px; }
+      .quick-routes { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 400px) {
+      .side-menu { flex: 0 0 85px; padding: 4px; }
+      .side-menu .stop-item .stop-name { max-width: 35px; }
+      #map { height: 190px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-card">
+  <!-- Header -->
+  <div class="app-header">
+    <h1><i class="fas fa-bus-alt"></i> Amravati</h1>
+    <div class="header-right">
+      <div class="live-indicator"><i class="fas fa-circle"></i> LIVE</div>
+    </div>
+  </div>
+
+  <!-- Page Navigation -->
+  <div class="page-nav">
+    <button class="active-page" data-page="home"><i class="fas fa-home"></i> Home</button>
+    <button data-page="routes"><i class="fas fa-route"></i> Routes</button>
+    <button data-page="planner"><i class="fas fa-map-signs"></i> Plan</button>
+  </div>
+
+  <!-- HOME PAGE -->
+  <div class="page active-page" id="page-home">
+    <div class="home-greeting">
+      <h2>🚌 Hello, Commuter!</h2>
+      <p>Track Amravati city buses in real-time. Select a route or plan your journey.</p>
+    </div>
+    <div class="quick-routes" id="quickRoutes">
+      <!-- filled by JS -->
+    </div>
+    <div class="home-features">
+      <div class="feature-box" onclick="switchPage('routes')">
+        <i class="fas fa-route"></i>
+        <span>View Routes</span>
+      </div>
+      <div class="feature-box" onclick="switchPage('planner')">
+        <i class="fas fa-map-signs"></i>
+        <span>Plan Trip</span>
+      </div>
+      <div class="feature-box" onclick="switchPage('routes')">
+        <i class="fas fa-bus"></i>
+        <span>Live Map</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROUTES PAGE (map + side menu) -->
+  <div class="page" id="page-routes">
+    <div class="route-selector" style="padding: 6px 0 0 0; background: #f8faff;">
+      <div class="scroll-routes" id="routeChipsContainer"></div>
+    </div>
+    <div class="map-page-wrapper">
+      <div class="map-side-wrapper">
+        <div id="map"></div>
+        <div class="side-menu" id="sideMenu">
+          <div class="menu-title"><i class="fas fa-route"></i> <span id="menuRouteName">Stops</span></div>
+          <div id="stopListContainer"><div class="empty-menu">Select a route</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="route-info">
+      <div class="selected-label"><i class="fas fa-route"></i> <span id="routeNameDisplay">All routes</span></div>
+      <button class="clear-btn" id="clearRouteBtn"><i class="fas fa-times-circle"></i> Clear</button>
+    </div>
+  </div>
+
+  <!-- PLANNER PAGE -->
+  <div class="page" id="page-planner">
+    <div class="planner-box">
+      <label><i class="fas fa-map-pin"></i> From (Origin)</label>
+      <select id="originSelect"><option value="">Select origin...</option></select>
+      <label><i class="fas fa-flag-checkered"></i> To (Destination)</label>
+      <select id="destSelect"><option value="">Select destination...</option></select>
+      <button class="planner-btn" id="planBtn"><i class="fas fa-search"></i> Find Bus</button>
+    </div>
+    <div class="planner-result" id="plannerResult">
+      <div class="result-route" id="resultRoute">Route: --</div>
+      <div class="result-stops" id="resultStops">Stops: --</div>
+      <div class="result-eta" id="resultEta">⏱️ Estimated travel: --</div>
+    </div>
+    <div style="background:white; border-radius:20px; padding:14px; border:1px solid #e3eaf2; margin-top:10px; font-size:0.7rem; color:#4d6f88; text-align:center;">
+      <i class="fas fa-info-circle"></i> Select origin and destination to find the best route.
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer-time">
+    <span><i class="far fa-clock"></i> <span id="clockDisplay">--:--:--</span></span>
+    <span><i class="fas fa-map-pin"></i> Amravati City</span>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ---------- ROUTE DATA ----------
+    const routesData = [
+      { id: 1, name: "Route 1", short: "R1", color: "#d45d2b", stops: ["Bus Stand", "Rajkamal Sq", "Rajapeth", "Nawathe", "Sai Nagar", "Old Town Badnera", "Badnera Rly Stn"] },
+      { id: 2, name: "Route 2", short: "R2", color: "#2b7a62", stops: ["SGBAU Gate", "Biyani Sq", "Bus Stand", "Rajkamal Sq", "Sai Nagar", "Badnera Rly Stn"] },
+      { id: 3, name: "Route 3", short: "R3", color: "#a44c9e", stops: ["Navsari Ring Rd", "Panchawati Sq", "Irwin Sq", "Rajkamal Sq", "Sai Nagar", "Badnera Rly Stn"] },
+      { id: 10, name: "Route 10", short: "R10", color: "#3f7e9c", stops: ["Rajapeth Bus Stand", "Central Bus Stand", "Panchawati Sq", "Kathora Naka", "Navsari", "Walgaon Bus Stop"] },
+      { id: 'S1', name: "Shuttle", short: "S1", color: "#b3682b", stops: ["PRMIT&R Gate", "Badnera Old Town", "Badnera Rly Stn"] },
+      { id: 4, name: "Route 4", short: "R4", color: "#2b6d8a", stops: ["Badnera Rly Stn", "Wadali Naka", "Vaishnavi Devi Temple", "Bypass Ring Rd"] },
+      { id: 5, name: "Route 5", short: "R5", color: "#7c5f8a", stops: ["Badnera Rly Stn", "Daryapur Rd Bypass", "Chhatri Talao Lake"] },
+      { id: 6, name: "Route 6", short: "R6", color: "#527a5e", stops: ["MHADA Colony", "Sai Nagar", "Tapovan", "SGBAU Gate", "PRMIT&R / Gode College"] },
+      { id: 7, name: "Route 7", short: "R7", color: "#b55d4a", stops: ["MHADA Colony", "Saturna DP Rd", "MIDC Amravati", "SGBAU Gate"] },
+      { id: 8, name: "Route 8", short: "R8", color: "#4f7f8f", stops: ["Jhiri Marg", "Badnera Depot", "Kholapurit Gate Market"] },
+      { id: 9, name: "Route 9", short: "R9", color: "#a5633e", stops: ["Central Bus Stand", "Irwin Sq", "Kholapurit Gate", "Bhatkuli Road"] }
+    ];
+
+    const stopCoords = {
+      "Bus Stand": [20.9320, 77.7520],
+      "Rajkamal Sq": [20.9355, 77.7485],
+      "Rajapeth": [20.9278, 77.7470],
+      "Nawathe": [20.9402, 77.7452],
+      "Sai Nagar": [20.9450, 77.7400],
+      "Old Town Badnera": [20.8550, 77.7150],
+      "Badnera Rly Stn": [20.8480, 77.7100],
+      "SGBAU Gate": [20.9680, 77.7300],
+      "Biyani Sq": [20.9500, 77.7380],
+      "Navsari Ring Rd": [20.9100, 77.7700],
+      "Panchawati Sq": [20.9200, 77.7600],
+      "Irwin Sq": [20.9300, 77.7580],
+      "Rajapeth Bus Stand": [20.9260, 77.7455],
+      "Central Bus Stand": [20.9320, 77.7520],
+      "Kathora Naka": [20.8980, 77.7750],
+      "Walgaon Bus Stop": [20.8800, 77.7900],
+      "PRMIT&R Gate": [20.8600, 77.7200],
+      "Wadali Naka": [20.8300, 77.7000],
+      "Vaishnavi Devi Temple": [20.8120, 77.6920],
+      "Bypass Ring Rd": [20.8000, 77.7000],
+      "Daryapur Rd Bypass": [20.8250, 77.6800],
+      "Chhatri Talao Lake": [20.8150, 77.6700],
+      "MHADA Colony": [20.9800, 77.7400],
+      "Tapovan": [20.9700, 77.7350],
+      "PRMIT&R / Gode College": [20.8580, 77.7220],
+      "Saturna DP Rd": [20.9850, 77.7500],
+      "MIDC Amravati": [21.0000, 77.7550],
+      "Jhiri Marg": [20.8900, 77.7300],
+      "Badnera Depot": [20.8550, 77.7120],
+      "Kholapurit Gate Market": [20.8700, 77.7400],
+      "Bhatkuli Road": [20.9100, 77.7800]
+    };
+    const allStops = Object.keys(stopCoords).sort();
+
+    // ---------- MAP ----------
+    const map = L.map('map').setView([20.925, 77.745], 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>, CartoDB'
+    }).addTo(map);
+
+    let routeLineLayer = L.layerGroup().addTo(map);
+    let busMarkerLayer = L.layerGroup().addTo(map);
+    let selectedRouteId = null;
+    let simTime = 0;
+
+    function getCoords(stop) { return stopCoords[stop] || [20.93, 77.75]; }
+
+    function buildPolyline(route) {
+      const latlngs = route.stops.map(s => getCoords(s));
+      return L.polyline(latlngs, { color: route.color, weight: 5, opacity: 0.8, smoothFactor: 1 });
+    }
+
+    function getBusPosition(route, progress) {
+      const stops = route.stops;
+      if (stops.length < 2) return getCoords(stops[0]);
+      const totalSegments = stops.length - 1;
+      const seg = Math.min(progress * totalSegments, totalSegments - 0.0001);
+      const idx = Math.floor(seg);
+      const frac = seg - idx;
+      const p1 = getCoords(stops[idx]);
+      const p2 = getCoords(stops[idx+1]);
+      return [ p1[0] + (p2[0] - p1[0]) * frac, p1[1] + (p2[1] - p1[1]) * frac ];
+    }
+
+    function renderMap() {
+      routeLineLayer.clearLayers();
+      busMarkerLayer.clearLayers();
+      let routesToShow = selectedRouteId !== null ? routesData.filter(r => r.id === selectedRouteId) : routesData;
+      routesToShow.forEach(route => {
+        routeLineLayer.addLayer(buildPolyline(route));
+        const period = 24;
+        const raw = (simTime / period) % 1;
+        let progress = raw < 0.5 ? raw * 2 : 2 - raw * 2;
+        progress = Math.min(Math.max(progress, 0.01), 0.99);
+        const pos = getBusPosition(route, progress);
+        const icon = L.divIcon({
+          className: 'bus-marker',
+          html: `<div style="background:${route.color}; width:18px; height:18px; border-radius:50%; border:3px solid white; box-shadow: 0 0 0 2px ${route.color}, 0 4px 12px rgba(0,0,0,0.25); display:flex; align-items:center; justify-content:center; font-size:8px; color:white; font-weight:700;">${typeof route.id === 'string' ? route.id : route.id}</div>`,
+          iconSize: [22,22],
+          iconAnchor: [11,11]
+        });
+        const marker = L.marker(pos, { icon }).addTo(busMarkerLayer);
+        marker.bindPopup(`<b>${route.name}</b><br>${route.stops[0]} → ${route.stops[route.stops.length-1]}`);
+      });
+      if (selectedRouteId !== null) {
+        const route = routesData.find(r => r.id === selectedRouteId);
+        if (route) {
+          const bounds = L.latLngBounds(route.stops.map(s => getCoords(s)));
+          map.fitBounds(bounds, { padding: [35,35] });
+        }
+      } else {
+        const allCoords = routesData.flatMap(r => r.stops.map(s => getCoords(s)));
+        map.fitBounds(L.latLngBounds(allCoords), { padding: [30,30] });
+      }
+    }
+
+    function renderSideMenu() {
+      const container = document.getElementById('stopListContainer');
+      const menuTitle = document.getElementById('menuRouteName');
+      if (selectedRouteId === null) {
+        menuTitle.textContent = 'Stops';
+        container.innerHTML = `<div class="empty-menu"><i class="fas fa-hand-pointer"></i> Select a route</div>`;
+        return;
+      }
+      const route = routesData.find(r => r.id === selectedRouteId);
+      if (!route) { container.innerHTML = `<div class="empty-menu">Not found</div>`; return; }
+      menuTitle.textContent = route.name;
+      const period = 24;
+      const raw = (simTime / period) % 1;
+      let progress = raw < 0.5 ? raw * 2 : 2 - raw * 2;
+      progress = Math.min(Math.max(progress, 0.01), 0.99);
+      const totalStops = route.stops.length;
+      const currentStopIndex = Math.min(Math.floor(progress * (totalStops - 1)), totalStops - 1);
+      let html = '';
+      route.stops.forEach((stop, idx) => {
+        let etaMin = idx >= currentStopIndex ? Math.round((idx - currentStopIndex) * 1.8 + 0.8) : -1;
+        const isCurrent = (idx === currentStopIndex);
+        const etaText = etaMin < 0 ? '✓' : (etaMin === 0 ? 'now' : etaMin + 'm');
+        const cls = isCurrent ? 'stop-item current' : 'stop-item';
+        html += `<div class="${cls}"><span class="stop-name">${stop}</span><span class="eta">${etaText}</span></div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    // ---------- CHIPS ----------
+    function renderChips() {
+      const container = document.getElementById('routeChipsContainer');
+      container.innerHTML = '';
+      const allChip = document.createElement('div');
+      allChip.className = 'route-chip' + (selectedRouteId === null ? ' active-chip' : '');
+      allChip.innerHTML = '<i class="fas fa-globe-asia"></i> All';
+      allChip.dataset.routeId = 'all';
+      allChip.addEventListener('click', () => { selectedRouteId = null; updateUI(); renderMap(); renderSideMenu(); });
+      container.appendChild(allChip);
+      routesData.forEach(route => {
+        const chip = document.createElement('div');
+        const isActive = (selectedRouteId === route.id);
+        chip.className = 'route-chip' + (isActive ? ' active-chip' : '');
+        chip.innerHTML = `<i class="fas fa-bus" style="color:${isActive ? '#f9d77e' : route.color};"></i> ${route.short}`;
+        chip.dataset.routeId = route.id;
+        chip.addEventListener('click', () => { selectedRouteId = route.id; updateUI(); renderMap(); renderSideMenu(); });
+        container.appendChild(chip);
+      });
+    }
+
+    function updateUI() {
+      document.querySelectorAll('.route-chip').forEach(chip => {
+        const id = chip.dataset.routeId;
+        if (id === 'all' && selectedRouteId === null) chip.classList.add('active-chip');
+        else if (id !== 'all' && Number(id) === selectedRouteId) chip.classList.add('active-chip');
+        else chip.classList.remove('active-chip');
+      });
+      document.getElementById('routeNameDisplay').textContent = selectedRouteId === null ? 'All routes' : (routesData.find(r => r.id === selectedRouteId)?.name || 'Route');
+    }
+
+    // ---------- QUICK ROUTES (home) ----------
+    function renderQuickRoutes() {
+      const container = document.getElementById('quickRoutes');
+      container.innerHTML = '';
+      routesData.slice(0, 6).forEach(route => {
+        const btn = document.createElement('div');
+        btn.className = 'quick-route-btn';
+        btn.innerHTML = `<i class="fas fa-bus" style="color:${route.color}"></i> ${route.short}`;
+        btn.addEventListener('click', () => {
+          selectedRouteId = route.id;
+          switchPage('routes');
+          setTimeout(() => { renderChips(); updateUI(); renderMap(); renderSideMenu(); }, 50);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    // ---------- PLANNER ----------
+    function populateSelects() {
+      const origin = document.getElementById('originSelect');
+      const dest = document.getElementById('destSelect');
+      origin.innerHTML = '<option value="">Select origin...</option>';
+      dest.innerHTML = '<option value="">Select destination...</option>';
+      allStops.forEach(s => {
+        origin.innerHTML += `<option value="${s}">${s}</option>`;
+        dest.innerHTML += `<option value="${s}">${s}</option>`;
+      });
+    }
+
+    document.getElementById('planBtn').addEventListener('click', function() {
+      const origin = document.getElementById('originSelect').value;
+      const dest = document.getElementById('destSelect').value;
+      const resultDiv = document.getElementById('plannerResult');
+      if (!origin || !dest) {
+        resultDiv.classList.remove('show');
+        alert('Please select both origin and destination.');
+        return;
+      }
+      if (origin === dest) {
+        resultDiv.classList.remove('show');
+        alert('Origin and destination cannot be the same.');
+        return;
+      }
+      // Find route that contains both stops in order
+      let foundRoute = null;
+      for (let route of routesData) {
+        const idxOrigin = route.stops.indexOf(origin);
+        const idxDest = route.stops.indexOf(dest);
+        if (idxOrigin !== -1 && idxDest !== -1 && idxOrigin < idxDest) {
+          foundRoute = route;
+          break;
+        }
+      }
+      if (!foundRoute) {
+        // try reverse order
+        for (let route of routesData) {
+          const idxOrigin = route.stops.indexOf(origin);
+          const idxDest = route.stops.indexOf(dest);
+          if (idxOrigin !== -1 && idxDest !== -1 && idxOrigin > idxDest) {
+            foundRoute = route;
+            break;
+          }
+        }
+      }
+      if (foundRoute) {
+        const idxO = foundRoute.stops.indexOf(origin);
+        const idxD = foundRoute.stops.indexOf(dest);
+        const stopsBetween = foundRoute.stops.slice(Math.min(idxO, idxD), Math.max(idxO, idxD) + 1);
+        const travelTime = Math.abs(idxD - idxO) * 2 + 2;
+        document.getElementById('resultRoute').textContent = `🚌 ${foundRoute.name} (${foundRoute.short})`;
+        document.getElementById('resultStops').textContent = `🛑 ${stopsBetween.join(' → ')}`;
+        document.getElementById('resultEta').textContent = `⏱️ Estimated travel: ~${travelTime} min`;
+        resultDiv.classList.add('show');
+        // Highlight the route
+        selectedRouteId = foundRoute.id;
+        switchPage('routes');
+        setTimeout(() => { renderChips(); updateUI(); renderMap(); renderSideMenu(); }, 50);
+      } else {
+        document.getElementById('resultRoute').textContent = '❌ No direct route found';
+        document.getElementById('resultStops').textContent = 'Try different stops';
+        document.getElementById('resultEta').textContent = '';
+        resultDiv.classList.add('show');
+      }
+    });
+
+    // ---------- PAGE SWITCHING ----------
+    window.switchPage = function(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+      document.querySelectorAll('.page-nav button').forEach(b => b.classList.remove('active-page'));
+      document.getElementById('page-' + pageId).classList.add('active-page');
+      document.querySelector(`.page-nav button[data-page="${pageId}"]`).classList.add('active-page');
+      if (pageId === 'routes') {
+        setTimeout(() => { map.invalidateSize(); renderMap(); renderSideMenu(); }, 100);
+      }
+    };
+
+    document.querySelectorAll('.page-nav button').forEach(btn => {
+      btn.addEventListener('click', function() {
+        switchPage(this.dataset.page);
+      });
+    });
+
+    // ---------- CLEAR ----------
+    document.getElementById('clearRouteBtn').addEventListener('click', () => {
+      selectedRouteId = null;
+      updateUI();
+      renderMap();
+      renderSideMenu();
+    });
+
+    // ---------- CLOCK ----------
+    function updateClock() {
+      document.getElementById('clockDisplay').textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    // ---------- TICK ----------
+    function tick() {
+      simTime += 0.6;
+      renderMap();
+      renderSideMenu();
+      updateClock();
+    }
+
+    // ---------- INIT ----------
+    renderQuickRoutes();
+    populateSelects();
+    renderChips();
+    renderMap();
+    renderSideMenu();
+    updateClock();
+    setInterval(tick, 2800);
+
+    // Fix map on routes page load
+    setTimeout(() => { map.invalidateSize(); }, 300);
+    console.log('🚍 Amravati Tracker with pages & planner ready');
+  })();
+</script>
+</body>
+</html>
